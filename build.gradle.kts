@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(ktorLibs.plugins.ktor)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktlint)
 }
 
 group = "com.example"
@@ -14,6 +15,10 @@ application {
 kotlin {
     jvmToolchain(21)
 }
+ktlint {
+    version = "1.6.0"
+}
+
 dependencies {
     implementation(ktorLibs.serialization.kotlinx.json)
     implementation(ktorLibs.server.callId)
