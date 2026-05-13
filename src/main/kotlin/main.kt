@@ -1,8 +1,9 @@
 package com.example
 
-import io.ktor.server.engine.*
 import io.ktor.server.application.*
+import io.ktor.server.engine.*
 
 fun main(args: Array<String>) {
-    io.ktor.server.netty.EngineMain.main(args)
+    io.ktor.server.netty.EngineMain
+        .main(args)
 }
