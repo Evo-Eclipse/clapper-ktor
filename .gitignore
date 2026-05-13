@@ -1,0 +1,55 @@
+# -- macOS -------------------------------------------------------------
+.DS_Store
+
+# -- Gradle ------------------------------------------------------------
+.gradle/
+/build/
+gradle-user-home/
+.gradletasknamecache
+
+# -- IntelliJ IDEA ------------------------------------------------------
+.idea/*
+!.idea/externalDependencies.xml
+!.idea/runConfigurations/
+!.idea/vcs.xml
+!.idea/dictionaries/
+!.idea/copyright/
+!.idea/icon.svg
+*.iml
+out/
+
+# -- Agents -------------------------------------------------------------
+.agents/
+
+# -- IDE ---------------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+
+# -- Kotlin / JVM -------------------------------------------------------
+.kotlin/
+hs_err_pid*.log
+local.properties
+
+# -- Maven Release Plugin ------------------------------------------------
+*.versionsBackup
+*.releaseBackup
+release.properties
+
+# -- Environment --------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -- Database -----------------------------------------------------------
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# -- Testing ------------------------------------------------------------
+*.profraw
+
+# -- Docker -------------------------------------------------------------
+docker-compose.override.yml
+
+# -- Storage ------------------------------------------------------------
+/uploads/
