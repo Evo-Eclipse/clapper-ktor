@@ -1,23 +1,417 @@
 openapi: "3.0.3"
 info:
-  title: "Application API"
-  description: "Application API"
+  title: "Clapper Animation Server API"
+  description: "REST API for managing animation state machines (FSM) and animation clip library for game entities."
   version: "1.0.0"
 servers:
-  - url: "http://0.0.0.0:8080"
+  - url: "http://localhost:8080"
+    description: "Local development server"
 paths:
-  /:
-    get:
-      description: "Hello World!"
+  /api/events/{entityId}:
+    post:
+      summary: "Dispatch FSM event"
+      description: "Sends an animation event to the specified entity, triggering a state transition if allowed by the transition table."
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique identifier of the game entity"
+          example: "hero"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventRequest"
+            example:
+              event: "MOVE"
       responses:
         "200":
-          description: "OK"
+          description: "Transition successful"
           content:
-            text/plain:
+            application/json:
               schema:
-                type: "string"
-              examples:
-                Example#1:
-                  value: "Hello World!"
+                $ref: "#/components/schemas/StateChangedDto"
+              example:
+                entityId: "hero"
+                from: "IDLE"
+                to: "WALK"
+                triggeredBy: "MOVE"
+                timestamp: 1700000000000
+        "400":
+          description: "Invalid event value or malformed request body"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid parameter"
+                details: "No enum constant com.example.domain.AnimEvent.INVALID"
+        "409":
+          description: "Transition not allowed from current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Forbidden transition"
+                details: "Entity 'hero': cannot transition from IDLE by SPRINT"
+  /api/entities:
+    get:
+      summary: "List all entities"
+      description: "Returns a snapshot of all registered entities and their current animation states."
+      responses:
+        "200":
+          description: "List of entity snapshots"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EntitySnapshotDto"
+              example:
+                - entityId: "hero"
+                  state: "IDLE"
+                - entityId: "enemy_1"
+                  state: "IDLE"
+                - entityId: "enemy_2"
+                  state: "IDLE"
+  /api/entities/{entityId}:
+    delete:
+      summary: "Delete entity"
+      description: "Removes an entity from the registry. Broadcasts a REMOVED event to all WebSocket clients."
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The unique identifier of the entity to delete"
+          example: "enemy_1"
+      responses:
+        "204":
+          description: "Entity deleted successfully"
+        "404":
+          description: "Entity not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Entity not found"
+                details: "Entity 'unknown_entity' does not exist"
+  /api/clips:
+    get:
+      summary: "List animation clips"
+      description: "Returns all animation clips from the library. Optionally filter by animation state using the state query parameter."
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [IDLE, WALK, RUN, ATTACK, DEATH]
+          description: "Filter clips by animation state"
+      responses:
+        "200":
+          description: "List of animation clips"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnimationClip"
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  name: "idle_breathing"
+                  state: "IDLE"
+                  durationMs: 2000
+                  loop: true
+                  tags: ["idle", "breathing"]
+        "400":
+          description: "Invalid state parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid parameter"
+                details: "No enum constant com.example.domain.AnimState.INVALID"
+    post:
+      summary: "Create animation clip"
+      description: "Creates a new animation clip in the library. The server generates a UUID for the clip."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClipCreateRequest"
+            example:
+              name: "run_cycle"
+              state: "RUN"
+              durationMs: 500
+              loop: true
+              tags: ["movement", "run"]
+      responses:
+        "201":
+          description: "Clip created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnimationClip"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                name: "run_cycle"
+                state: "RUN"
+                durationMs: 500
+                loop: true
+                tags: ["movement", "run"]
+        "400":
+          description: "Validation failed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Validation failed"
+                details: "name must not be blank; durationMs must be >= 1"
+  /api/clips/{id}:
+    get:
+      summary: "Get clip by ID"
+      description: "Returns a single animation clip by its UUID."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The UUID of the animation clip"
+      responses:
+        "200":
+          description: "Animation clip found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnimationClip"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "idle_breathing"
+                state: "IDLE"
+                durationMs: 2000
+                loop: true
+                tags: ["idle", "breathing"]
+        "404":
+          description: "Clip not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Clip not found"
+                details: "Clip '550e8400-e29b-41d4-a716-446655440099' does not exist"
+    put:
+      summary: "Update clip"
+      description: "Fully replaces an existing animation clip with the provided data. The ID from the URL is used."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The UUID of the animation clip to update"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClipUpdateRequest"
+            example:
+              name: "idle_breathing_v2"
+              state: "IDLE"
+              durationMs: 2500
+              loop: true
+              tags: ["idle", "breathing", "updated"]
+      responses:
+        "200":
+          description: "Clip updated successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnimationClip"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "idle_breathing_v2"
+                state: "IDLE"
+                durationMs: 2500
+                loop: true
+                tags: ["idle", "breathing", "updated"]
+        "400":
+          description: "Validation failed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Validation failed"
+                details: "durationMs must be >= 1"
+        "404":
+          description: "Clip not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Clip not found"
+                details: "Clip '550e8400-e29b-41d4-a716-446655440099' does not exist"
+    delete:
+      summary: "Delete clip"
+      description: "Removes an animation clip from the library by its UUID."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "The UUID of the animation clip to delete"
+      responses:
+        "204":
+          description: "Clip deleted successfully"
+        "400":
+          description: "Invalid UUID format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid parameter"
+                details: "Invalid UUID format: not-a-uuid"
+        "404":
+          description: "Clip not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Clip not found"
+                details: "Clip '550e8400-e29b-41d4-a716-446655440099' does not exist"
 components:
-  schemas: { }
+  schemas:
+    EventRequest:
+      type: object
+      required:
+        - event
+      properties:
+        event:
+          type: string
+          enum: [MOVE, SPRINT, STOP, ATTACK_INPUT, HIT, RESPAWN]
+          description: "The animation event to dispatch"
+    StateChangedDto:
+      type: object
+      properties:
+        entityId:
+          type: string
+          description: "The entity that transitioned"
+        from:
+          type: string
+          description: "Previous animation state"
+        to:
+          type: string
+          description: "New animation state"
+        triggeredBy:
+          type: string
+          description: "The event that triggered the transition"
+        timestamp:
+          type: integer
+          format: int64
+          description: "Epoch milliseconds when the transition occurred"
+    EntitySnapshotDto:
+      type: object
+      properties:
+        entityId:
+          type: string
+          description: "The entity identifier"
+        state:
+          type: string
+          description: "Current animation state"
+    AnimationClip:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Server-generated UUID"
+        name:
+          type: string
+          description: "Clip name (1-255 characters)"
+        state:
+          type: string
+          enum: [IDLE, WALK, RUN, ATTACK, DEATH]
+          description: "Associated animation state"
+        durationMs:
+          type: integer
+          description: "Duration in milliseconds (1-600000)"
+        loop:
+          type: boolean
+          description: "Whether the clip loops"
+        tags:
+          type: array
+          items:
+            type: string
+          description: "Tags for categorization (max 20, each max 50 chars)"
+    ClipCreateRequest:
+      type: object
+      required:
+        - name
+        - state
+        - durationMs
+        - loop
+      properties:
+        name:
+          type: string
+        state:
+          type: string
+          enum: [IDLE, WALK, RUN, ATTACK, DEATH]
+        durationMs:
+          type: integer
+        loop:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+    ClipUpdateRequest:
+      type: object
+      required:
+        - name
+        - state
+        - durationMs
+        - loop
+      properties:
+        name:
+          type: string
+        state:
+          type: string
+          enum: [IDLE, WALK, RUN, ATTACK, DEATH]
+        durationMs:
+          type: integer
+        loop:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: "Error category"
+        details:
+          type: string
+          nullable: true
+          description: "Detailed error message"
