@@ -12,12 +12,12 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.ktor.server.websocket.WebSockets as ServerWebSockets
 import kotlinx.serialization.json.Json
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
+import io.ktor.server.websocket.WebSockets as ServerWebSockets
 
 fun testApp(block: suspend ApplicationTestBuilder.(TestServices) -> Unit) =
     testApplication {
