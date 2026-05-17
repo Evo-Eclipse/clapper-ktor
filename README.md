@@ -20,20 +20,21 @@ manage the asset catalog without touching game code.
 ## Architecture
 
 ```mermaid
+%%{init: {"layout": "elk"}}%%
 flowchart LR
-    subgraph clients[Clients]
-        rest[REST client]
-        ws[WS listener]
-        swagger[Swagger UI]
+    subgraph Clients["Clients"]
+        rest["REST client"]
+        ws["WS listener"]
+        swagger["Swagger UI"]
     end
 
-    subgraph server[Ktor server]
-        routes[Routes]
-        fsm[FsmService]
-        clip[ClipService]
-        broadcaster[SharedFlow broadcaster]
-        registry[EntityRegistry]
-        store[ClipStore]
+    subgraph Server["Ktor server"]
+        routes["Routes"]
+        fsm["FsmService"]
+        clip["ClipService"]
+        broadcaster["SharedFlow broadcaster"]
+        registry["EntityRegistry"]
+        store["ClipStore"]
     end
 
     rest -->|HTTP| routes
@@ -81,28 +82,29 @@ Transitions not on the diagram are rejected with `409 Conflict`.
 ## Project layout
 
 ```mermaid
+%%{init: {"layout": "elk"}}%%
 flowchart TD
-    root[clapper-ktor]
-    root --> src[src]
-    root --> scripts[scripts]
-    root --> docs[docs]
-    root --> conf[Containerfile + compose.yaml]
+    root["clapper-ktor"]
+    root --> src["src"]
+    root --> scripts["scripts"]
+    root --> docs["docs"]
+    root --> conf["Containerfile + compose.yaml"]
 
-    src --> main[main/kotlin]
-    src --> test[test/kotlin]
+    src --> main["main/kotlin"]
+    src --> test["test/kotlin"]
 
-    main --> domain[domain: FSM, DTOs, validation]
-    main --> app[application: services, DI]
-    main --> infra[infrastructure: stores, broadcaster]
-    main --> pres[presentation: routes, status pages]
+    main --> domain["domain: FSM, DTOs, validation"]
+    main --> app["application: services, DI"]
+    main --> infra["infrastructure: stores, broadcaster"]
+    main --> pres["presentation: routes, status pages"]
 
-    test --> tdomain[domain: property tests]
-    test --> tapp[application: service tests]
-    test --> tinfra[infrastructure: store tests]
-    test --> tpres[presentation: route + integration]
+    test --> tdomain["domain: property tests"]
+    test --> tapp["application: service tests"]
+    test --> tinfra["infrastructure: store tests"]
+    test --> tpres["presentation: route + integration"]
 
-    scripts --> seed[seed-events.sh]
-    scripts --> tws[test-ws.sh]
+    scripts --> seed["seed-events.sh"]
+    scripts --> tws["test-ws.sh"]
 ```
 
 ## API surface
@@ -170,21 +172,22 @@ The `Containerfile` is a two-stage build:
    stage. Runs as non-root user `app`.
 
 ```mermaid
+%%{init: {"layout": "elk"}}%%
 flowchart LR
-    subgraph s1[Stage 1 - eclipse-temurin:21-jdk-noble]
-        gradle[gradlew buildFatJar]
-        jdeps[jdeps + jlink]
-        jar[clapper-all.jar]
-        jre[/opt/jre]
+    subgraph s1["Stage 1 - eclipse-temurin:21-jdk-noble"]
+        gradle["gradlew buildFatJar"]
+        jdeps["jdeps + jlink"]
+        jar["clapper-all.jar"]
+        jre["/opt/jre"]
         gradle --> jar
         gradle --> jdeps
         jdeps --> jre
     end
 
-    subgraph s2[Stage 2 - ubuntu:26.04]
-        runjre[/opt/jre/]
-        runjar[/app/clapper.jar]
-        user[USER app]
+    subgraph s2["Stage 2 - ubuntu:26.04"]
+        runjre["/opt/jre/"]
+        runjar["/app/clapper.jar"]
+        user["USER app"]
     end
 
     jar -->|COPY| runjar
@@ -237,8 +240,8 @@ client is required), prints the initial snapshot, dispatches
 
 ```mermaid
 sequenceDiagram
-    participant Sh as test-ws.sh
-    participant W as websocat container
+    participant Sh as testWsSh
+    participant W as websocatContainer
     participant S as Server
 
     Sh->>S: DELETE /api/entities/hero
